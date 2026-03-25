@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import './Navbar.css'
+import { getCart, getCurrentUser } from '../utils/session.js'
 
 function Navbar() {
   const [open, setOpen] = useState(false)
   const navRef = useRef(null)
   const [user, setUser] = useState(null)
+  const [cartCount, setCartCount] = useState(0)
 
   const toggleMenu = () => {
     setOpen((prev) => !prev)
@@ -56,6 +58,27 @@ function Navbar() {
     return () => window.removeEventListener('storage', onStorage)
   }, [])
 
+  useEffect(() => {
+    const refreshCart = () => {
+      const u = getCurrentUser()
+      if (!u || u.role !== 'customer') {
+        setCartCount(0)
+        return
+      }
+      const items = getCart(u.email)
+      const count = items.reduce((sum, i) => sum + (Number(i?.quantity) || 1), 0)
+      setCartCount(count)
+    }
+
+    refreshCart()
+    window.addEventListener('storage', refreshCart)
+    window.addEventListener('pikaplace-cart', refreshCart)
+    return () => {
+      window.removeEventListener('storage', refreshCart)
+      window.removeEventListener('pikaplace-cart', refreshCart)
+    }
+  }, [user?.email, user?.role])
+
   const handleLogout = () => {
     localStorage.removeItem('user')
     try {
@@ -101,10 +124,23 @@ function Navbar() {
         <Link to="/product" className="nav__link" onClick={() => setOpen(false)}>
           Product
         </Link>
+        {user && user.role === 'customer' && (
+          <>
+            <Link to="/cart" className="nav__link" onClick={() => setOpen(false)}>
+              Cart{cartCount ? ` (${cartCount})` : ''}
+            </Link>
+            <Link to="/orders" className="nav__link" onClick={() => setOpen(false)}>
+              Orders
+            </Link>
+          </>
+        )}
         {user && user.role === 'admin' && (
           <>
             <Link to="/admin/stock" className="nav__link" onClick={() => setOpen(false)}>
               Stock
+            </Link>
+            <Link to="/admin/home" className="nav__link" onClick={() => setOpen(false)}>
+              Edit's
             </Link>
             <Link to="/admin/product-report" className="nav__link" onClick={() => setOpen(false)}>
               Product Report
@@ -128,6 +164,18 @@ function Navbar() {
               </span>
               <span className="nav__admin-email">{user.email}</span>
             </div>
+            <Link
+              to="/profile"
+              className="nav__admin-profile"
+              aria-label="Open profile"
+              title="Profile"
+              onClick={() => setOpen(false)}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <circle cx="12" cy="8" r="4" fill="currentColor" />
+                <path d="M4 20a8 8 0 0 1 16 0" fill="none" stroke="currentColor" strokeWidth="2" />
+              </svg>
+            </Link>
             <button
               type="button"
               className="nav__admin-logout"

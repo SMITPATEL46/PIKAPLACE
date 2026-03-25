@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { FiEye, FiEyeOff } from 'react-icons/fi'
 import Navbar from '../components/Navbar.jsx'
+import { addToCart, getAllUsers, recordUserLogin, updateUserPassword } from '../utils/session.js'
 import './Auth.css'
 
 const Input = ({
@@ -87,8 +88,74 @@ export default function Auth() {
   }
 
   const navigate = useNavigate()
+  const location = useLocation()
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState(null)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [forgotForm, setForgotForm] = useState({
+    email: '',
+    otp: '',
+    newPassword: '',
+    confirmPassword: '',
+  })
+  const [forgotStep, setForgotStep] = useState('request')
+  const [forgotGeneratedOtp, setForgotGeneratedOtp] = useState('')
+  const [forgotOtpExpiresAt, setForgotOtpExpiresAt] = useState(null)
+  const [forgotOtpSecondsLeft, setForgotOtpSecondsLeft] = useState(0)
+  const [forgotError, setForgotError] = useState('')
+  const [forgotSuccess, setForgotSuccess] = useState('')
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+  useEffect(() => {
+    if (!forgotOtpExpiresAt) {
+      setForgotOtpSecondsLeft(0)
+      return
+    }
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((forgotOtpExpiresAt - Date.now()) / 1000))
+      setForgotOtpSecondsLeft(remaining)
+    }
+    tick()
+    const timer = window.setInterval(tick, 1000)
+    return () => window.clearInterval(timer)
+  }, [forgotOtpExpiresAt])
+
+  const finishAuthRedirect = (user) => {
+    const redirectTo = location.state?.redirectTo
+    const redirectState = location.state?.redirectState
+
+    // If user was trying to do something (buy/add to cart), handle it here.
+    const isProductRedirect = typeof redirectTo === 'string' && redirectTo.startsWith('/product')
+
+    if (user?.role === 'customer' && isProductRedirect && redirectState?.action === 'buy') {
+      const product = redirectState?.product
+      if (product) {
+        try {
+          localStorage.setItem('selectedProduct', JSON.stringify(product))
+        } catch {
+          // ignore
+        }
+        navigate('/checkout', { state: { product } })
+        return
+      }
+    }
+
+    if (user?.role === 'customer' && isProductRedirect && redirectState?.action === 'addToCart') {
+      const product = redirectState?.product
+      if (product) {
+        addToCart(user.email, product, 1)
+        navigate('/cart')
+        return
+      }
+    }
+
+    if (redirectTo) {
+      navigate(redirectTo, { state: redirectState })
+      return
+    }
+
+    navigate(user?.role === 'admin' ? '/admin' : '/product')
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -109,10 +176,11 @@ export default function Auth() {
           }
           const user = { email: inputEmail, name: 'Admin', role: 'admin' }
           localStorage.setItem('user', JSON.stringify(user))
+          recordUserLogin(user.email, user.role)
           alert('Admin logged in successfully')
           setForm(emptyForm)
           setErrors({})
-          navigate('/admin')
+          finishAuthRedirect(user)
         } else {
           const inputEmail = (form.email || '').toLowerCase()
           const usersRaw = localStorage.getItem('users')
@@ -140,10 +208,11 @@ export default function Auth() {
             role: 'customer',
           }
           localStorage.setItem('user', JSON.stringify(user))
+          recordUserLogin(user.email, user.role)
           alert('Customer logged in successfully')
           setForm(emptyForm)
           setErrors({})
-          navigate('/product')
+          finishAuthRedirect(user)
         }
       } else {
         const inputEmail = (form.email || '').toLowerCase()
@@ -176,7 +245,7 @@ export default function Auth() {
         alert('Customer registered successfully')
         setForm(emptyForm)
         setErrors({})
-        navigate('/product')
+        finishAuthRedirect({ email: newUser.email, name: newUser.name, role: 'customer' })
       }
     } catch (error) {
       console.error('Auth error:', error)
@@ -254,7 +323,94 @@ export default function Auth() {
     setForm(emptyForm)
     setErrors({})
     setSubmitError(null)
+    setShowForgotPassword(false)
+    setForgotForm({ email: '', otp: '', newPassword: '', confirmPassword: '' })
+    setForgotStep('request')
+    setForgotGeneratedOtp('')
+    setForgotOtpExpiresAt(null)
+    setForgotError('')
+    setForgotSuccess('')
     setFormVersion((v) => v + 1)
+  }
+
+  const buildOtp = () => String(Math.floor(100000 + Math.random() * 900000))
+
+  const handleForgotSendOtp = () => {
+    setForgotError('')
+    setForgotSuccess('')
+
+    const email = (forgotForm.email || '').trim().toLowerCase()
+    if (!email) {
+      setForgotError('Please enter email.')
+      return
+    }
+    if (!emailRegex.test(email)) {
+      setForgotError('Please enter a valid email.')
+      return
+    }
+    const users = getAllUsers()
+    const exists = users.some((u) => String(u?.email || '').toLowerCase() === email)
+    if (!exists) {
+      setForgotError('Account not found with this email.')
+      return
+    }
+
+    const otp = buildOtp()
+    setForgotGeneratedOtp(otp)
+    setForgotOtpExpiresAt(Date.now() + 2 * 60 * 1000)
+    setForgotStep('verify')
+    setForgotForm((prev) => ({ ...prev, email, otp: '', newPassword: '', confirmPassword: '' }))
+    setForgotSuccess(`OTP sent successfully. Demo OTP: ${otp}`)
+  }
+
+  const handleForgotVerifyOtp = () => {
+    setForgotError('')
+    setForgotSuccess('')
+    if (!forgotForm.otp.trim()) {
+      setForgotError('Please enter OTP.')
+      return
+    }
+    if (!forgotOtpExpiresAt || Date.now() > forgotOtpExpiresAt) {
+      setForgotError('OTP expired. Please resend OTP.')
+      return
+    }
+    if (forgotForm.otp.trim() !== forgotGeneratedOtp) {
+      setForgotError('Invalid OTP. Please try again.')
+      return
+    }
+    setForgotStep('reset')
+    setForgotSuccess('OTP verified. Now set your new password.')
+  }
+
+  const handleForgotPasswordSubmit = () => {
+    setForgotError('')
+    setForgotSuccess('')
+    if (forgotStep !== 'reset') return
+
+    const email = (forgotForm.email || '').trim().toLowerCase()
+    if (!forgotForm.newPassword || !forgotForm.confirmPassword) {
+      setForgotError('Please fill new password fields.')
+      return
+    }
+    if (forgotForm.newPassword.length < 6) {
+      setForgotError('New password must be at least 6 characters.')
+      return
+    }
+    if (forgotForm.newPassword !== forgotForm.confirmPassword) {
+      setForgotError('New password and confirm password must match.')
+      return
+    }
+    const result = updateUserPassword(email, forgotForm.newPassword)
+    if (!result.ok) {
+      setForgotError('Could not reset password. Try again.')
+      return
+    }
+    setForgotForm({ email: '', otp: '', newPassword: '', confirmPassword: '' })
+    setForgotGeneratedOtp('')
+    setForgotOtpExpiresAt(null)
+    setForgotStep('request')
+    setForgotSuccess('Password reset successfully. Please login.')
+    setSubmitError(null)
   }
 
   return (
@@ -381,6 +537,124 @@ export default function Auth() {
                         : 'Customer Login'
                       : 'Customer Register'}
                 </button>
+                {!isAdmin && mode === 'login' && (
+                  <button
+                    type="button"
+                    className="link-btn auth-forgot-toggle"
+                    onClick={() => {
+                      setShowForgotPassword((v) => !v)
+                      setForgotStep('request')
+                      setForgotGeneratedOtp('')
+                      setForgotOtpExpiresAt(null)
+                      setForgotForm((prev) => ({
+                        ...prev,
+                        otp: '',
+                        newPassword: '',
+                        confirmPassword: '',
+                      }))
+                      setForgotError('')
+                      setForgotSuccess('')
+                    }}
+                  >
+                    {showForgotPassword ? 'Hide forgot password' : 'Forgot Password?'}
+                  </button>
+                )}
+                {!isAdmin && mode === 'login' && showForgotPassword && (
+                  <div className="auth-forgot-box">
+                    <div className="auth-forgot-step">
+                      {forgotStep === 'request'
+                        ? 'Step 1: Enter Email'
+                        : forgotStep === 'verify'
+                          ? 'Step 2: Verify OTP'
+                          : 'Step 3: Reset Password'}
+                    </div>
+                    <label className="field">
+                      <span>Email</span>
+                      <input
+                        type="email"
+                        value={forgotForm.email}
+                        onChange={(e) =>
+                          setForgotForm((prev) => ({ ...prev, email: e.target.value }))
+                        }
+                        placeholder="you@example.com"
+                        disabled={forgotStep !== 'request'}
+                      />
+                    </label>
+                    {forgotStep !== 'request' && (
+                      <label className="field">
+                        <span>OTP (6-digit)</span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          value={forgotForm.otp}
+                          onChange={(e) =>
+                            setForgotForm((prev) => ({
+                              ...prev,
+                              otp: e.target.value.replace(/\D/g, '').slice(0, 6),
+                            }))
+                          }
+                          placeholder="Enter OTP"
+                        />
+                      </label>
+                    )}
+                    {forgotStep === 'reset' && (
+                      <>
+                        <label className="field">
+                          <span>New Password</span>
+                          <input
+                            type="password"
+                            value={forgotForm.newPassword}
+                            onChange={(e) =>
+                              setForgotForm((prev) => ({ ...prev, newPassword: e.target.value }))
+                            }
+                            placeholder="Enter new password"
+                          />
+                        </label>
+                        <label className="field">
+                          <span>Confirm New Password</span>
+                          <input
+                            type="password"
+                            value={forgotForm.confirmPassword}
+                            onChange={(e) =>
+                              setForgotForm((prev) => ({ ...prev, confirmPassword: e.target.value }))
+                            }
+                            placeholder="Repeat new password"
+                          />
+                        </label>
+                      </>
+                    )}
+                    {forgotError ? <div className="error">{forgotError}</div> : null}
+                    {forgotSuccess ? <div className="success">{forgotSuccess}</div> : null}
+                    {forgotStep === 'verify' && forgotOtpSecondsLeft > 0 && (
+                      <div className="auth-otp-timer">OTP valid for {forgotOtpSecondsLeft}s</div>
+                    )}
+                    {forgotStep === 'request' && (
+                      <button type="button" className="submit-btn" onClick={handleForgotSendOtp}>
+                        Send OTP
+                      </button>
+                    )}
+                    {forgotStep === 'verify' && forgotOtpSecondsLeft === 0 && (
+                      <button type="button" className="link-btn" onClick={handleForgotSendOtp}>
+                        Resend OTP
+                      </button>
+                    )}
+                    {forgotStep === 'verify' && (
+                      <button type="button" className="submit-btn" onClick={handleForgotVerifyOtp}>
+                        Verify OTP
+                      </button>
+                    )}
+                    {forgotStep === 'reset' && (
+                      <button
+                        type="button"
+                        className="submit-btn"
+                        onClick={handleForgotPasswordSubmit}
+                      >
+                        Reset Password
+                      </button>
+                    )}
+                  </div>
+                )}
               </form>
             </div>
             <div className="auth-footer">

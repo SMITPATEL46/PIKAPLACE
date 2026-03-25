@@ -45,6 +45,15 @@
   overflow: hidden;
 }
 
+.product-card-open {
+  border: none;
+  width: 100%;
+  background: transparent;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+}
+
 .product-card-media {
   height: 160px;
   width: 100%;

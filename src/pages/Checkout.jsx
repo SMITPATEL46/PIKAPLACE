@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { jsPDF } from 'jspdf'
 import Navbar from '../components/Navbar.jsx'
+import { getCart, getCurrentUser, getOrders, setCart, setOrders } from '../utils/session.js'
 import './Checkout.css'
 
 const steps = ['Product', 'Delivery', 'Details', 'Payment']
@@ -113,6 +114,31 @@ function Checkout() {
   })
 
   const product = useMemo(() => getInitialProduct(location.state), [location.state])
+  const initialQuantity = useMemo(() => {
+    const q = Number(location.state?.initialQuantity)
+    return Number.isFinite(q) ? Math.max(1, Math.floor(q)) : 1
+  }, [location.state])
+
+  const availableStock = useMemo(() => {
+    if (!product?.id) return null
+    try {
+      const raw = localStorage.getItem('products')
+      if (!raw) return null
+      const list = JSON.parse(raw)
+      if (!Array.isArray(list)) return null
+      const match = list.find((p) => p.id === product.id)
+      const value = Number(match?.available)
+      if (!Number.isFinite(value) || value < 0) return null
+      return Math.floor(value)
+    } catch {
+      return null
+    }
+  }, [product])
+
+  useEffect(() => {
+    setForm((prev) => ({ ...prev, quantity: initialQuantity }))
+  }, [initialQuantity])
+
   const cityOptions = useMemo(() => {
     const selected = form.state
     return selected ? INDIA_STATE_CITY[selected] || [] : []
@@ -255,6 +281,8 @@ function Checkout() {
       const q = Number(form.quantity)
       if (!Number.isFinite(q) || q < 1 || !Number.isInteger(q)) {
         nextErrors.quantity = 'Quantity must be a whole number (min 1).'
+      } else if (Number.isFinite(availableStock) && q > availableStock) {
+        nextErrors.quantity = `Available quantity is ${availableStock}; you cannot order more than this.`
       }
     }
 
@@ -291,8 +319,47 @@ function Checkout() {
     if (!validateStep(activeStep)) return
 
     if (activeStep === steps.length - 1) {
+      const user = getCurrentUser()
+      const email = user?.email
+
+      if (email) {
+        const addressText = buildAddressText()
+        const orderId = `PKP-${Date.now()}`
+        const items = [
+          {
+            product,
+            quantity,
+            unitPrice,
+            amount: basePrice,
+          },
+        ]
+        const order = {
+          id: orderId,
+          createdAt: new Date().toISOString(),
+          email,
+          items,
+          subtotal: basePrice,
+          tax,
+          total,
+          addressText,
+          customer: {
+            fullName: form.fullName,
+            mobile: digitsOnly(form.mobile),
+            email: form.email,
+          },
+        }
+        const existing = getOrders(email)
+        setOrders(email, [order, ...existing])
+
+        const fromCartItemId = location.state?.fromCartItemId
+        if (fromCartItemId) {
+          const cart = getCart(email)
+          setCart(email, cart.filter((c) => c.id !== fromCartItemId))
+        }
+      }
+
       downloadInvoicePdf()
-      navigate('/')
+      navigate('/orders')
       return
     }
 

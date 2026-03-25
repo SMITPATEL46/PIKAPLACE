@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar.jsx'
+import { addToCart, getCurrentUser } from '../utils/session.js'
 import './Product.css'
 
 const defaultProducts = [
@@ -105,6 +106,8 @@ function Product() {
   const [priceFilter, setPriceFilter] = useState('All')
   const [sortOrder, setSortOrder] = useState('None')
   const navigate = useNavigate()
+  const user = getCurrentUser()
+  const isAdmin = user?.role === 'admin'
 
   useEffect(() => {
     const handleStorage = (event) => {
@@ -219,6 +222,12 @@ function Product() {
           <div className="product-grid">
             {visibleProducts.map((watch) => (
               <article key={watch.id} className="product-card">
+                <button
+                  type="button"
+                  className="product-card-open"
+                  onClick={() => navigate(`/product/${watch.id}`)}
+                  aria-label={`Open ${watch.name} details`}
+                >
                 <div className="product-card-media">
                   <img src={watch.image} alt={watch.name} loading="lazy" />
                 </div>
@@ -227,6 +236,7 @@ function Product() {
                   <h2 className="product-name">{watch.name}</h2>
                   <p className="product-specs">{watch.specs}</p>
                 </div>
+                </button>
                 <div className="product-card-footer">
                   <div className="product-price-block">
                     <span className="product-price-label">Starting from</span>
@@ -236,20 +246,52 @@ function Product() {
                         : '—'}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    className="product-cta"
-                    onClick={() => {
-                      try {
-                        localStorage.setItem('selectedProduct', JSON.stringify(watch))
-                      } catch {
-                        // ignore storage issues
-                      }
-                      navigate('/checkout', { state: { product: watch } })
-                    }}
-                  >
-                    Buy Now →
-                  </button>
+                  {!isAdmin && (
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        className="product-cta"
+                        onClick={() => {
+                          const current = getCurrentUser()
+                          if (!current || current.role !== 'customer') {
+                            navigate('/auth', {
+                              state: { redirectTo: '/product', redirectState: { action: 'buy', product: watch } },
+                            })
+                            return
+                          }
+                          try {
+                            localStorage.setItem('selectedProduct', JSON.stringify(watch))
+                          } catch {
+                            // ignore storage issues
+                          }
+                          navigate('/checkout', { state: { product: watch } })
+                        }}
+                      >
+                        Buy Now →
+                      </button>
+                      <button
+                        type="button"
+                        className="product-cta"
+                        style={{ background: 'white', color: '#111827', border: '1px solid rgba(0,0,0,0.12)' }}
+                        onClick={() => {
+                          const current = getCurrentUser()
+                          if (!current || current.role !== 'customer') {
+                            navigate('/auth', {
+                              state: {
+                                redirectTo: '/product',
+                                redirectState: { action: 'addToCart', product: watch },
+                              },
+                            })
+                            return
+                          }
+                          addToCart(current.email, watch, 1)
+                          navigate('/cart')
+                        }}
+                      >
+                        Add to Cart
+                      </button>
+                    </div>
+                  )}
                 </div>
               </article>
             ))}

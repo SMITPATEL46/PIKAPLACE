@@ -135,6 +135,24 @@
   font-size: 0.8rem;
 }
 
+.nav__admin-profile {
+  height: 2.1rem;
+  width: 2.1rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  color: #bfdbfe;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.nav__admin-profile:hover {
+  background: rgba(59, 130, 246, 0.18);
+  color: #dbeafe;
+}
+
 .nav__admin-logout:hover {
   background: rgba(248, 113, 113, 0.15);
 }

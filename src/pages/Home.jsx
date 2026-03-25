@@ -103,6 +103,43 @@ const features = [
   },
 ]
 
+const HERO_STORAGE_KEY = 'home_hero'
+const HOME_SECTION_KEYS_KEY = 'home_section_keys'
+const HOME_COLLECTIONS_KEY = 'home_collections'
+
+const defaultHomeSectionKeys = ['collections', 'offer', 'features', 'testimonials']
+
+const defaultCollections = categories.map((x) => ({
+  id: x.id,
+  title: x.name,
+  story: x.description,
+  image: x.image,
+}))
+
+const loadHeroConfig = () => {
+  const fallback = {
+    tag: 'New arrivals · 2026 collection',
+    titleMain: 'Timeless Watches for',
+    titleHighlight: 'Timeless Style',
+    subtitle:
+      'Premium analog watches crafted for elegance and precision. Discover hand-finished pieces that celebrate classic horology with a contemporary edge.',
+    watchName: 'Midnight Steel Chrono',
+    watchSub: 'Limited edition · 250 pieces',
+    priceText: '₹5,999',
+    imageUrl:
+      'https://imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:500/height:500/https://cdn.gamma.app/5ofxzhzh7h3wl0r/generated-images/1-rKSrImqDhRJv01tqjmn.png@jpg',
+  }
+
+  try {
+    const raw = localStorage.getItem(HERO_STORAGE_KEY)
+    if (!raw) return fallback
+    const parsed = JSON.parse(raw)
+    return { ...fallback, ...parsed }
+  } catch {
+    return fallback
+  }
+}
+
 const testimonials = [
   {
     name: 'Arjun Mehta',
@@ -120,6 +157,30 @@ const testimonials = [
     rating: 5,
   },
 ]
+
+const loadHomeSectionKeys = () => {
+  try {
+    const raw = localStorage.getItem(HOME_SECTION_KEYS_KEY)
+    if (!raw) return defaultHomeSectionKeys
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed) || parsed.length === 0) return defaultHomeSectionKeys
+    return parsed
+  } catch {
+    return defaultHomeSectionKeys
+  }
+}
+
+const loadCollections = () => {
+  try {
+    const raw = localStorage.getItem(HOME_COLLECTIONS_KEY)
+    if (!raw) return defaultCollections
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed) || parsed.length === 0) return defaultCollections
+    return parsed
+  } catch {
+    return defaultCollections
+  }
+}
 
 function StarRating({ value }) {
   const fullStars = Math.floor(value)
@@ -146,6 +207,10 @@ function StarRating({ value }) {
 }
 
 function Home() {
+  const hero = loadHeroConfig()
+  const homeSections = loadHomeSectionKeys()
+  const collections = loadCollections()
+
   return (
     <>
       <Navbar />
@@ -158,17 +223,16 @@ function Home() {
         <div className="relative mx-auto flex max-w-6xl flex-col gap-12 px-4 py-16 md:flex-row md:items-center md:py-24 lg:px-6 home-inner home-hero-grid">
           <div className="max-w-xl space-y-6 hero-left">
             <p className="inline-flex items-center rounded-full border border-amber-400/40 bg-slate-900/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-300 hero-badge">
-              New arrivals · 2026 collection
+              {hero.tag}
             </p>
             <h1 className="text-balance text-3xl font-semibold tracking-tight text-slate-50 sm:text-4xl lg:text-5xl hero-title">
-              Timeless Watches for{' '}
+              {hero.titleMain}{' '}
               <span className="bg-gradient-to-r from-amber-300 via-slate-100 to-sky-300 bg-clip-text text-transparent hero-highlight">
-                Timeless Style
+                {hero.titleHighlight}
               </span>
             </h1>
             <p className="max-w-lg text-sm text-slate-300 sm:text-base hero-subtitle">
-              Premium analog watches crafted for elegance and precision. Discover hand-finished
-              pieces that celebrate classic horology with a contemporary edge.
+              {hero.subtitle}
             </p>
             <div className="flex flex-wrap gap-3 hero-ctas">
               <Link
@@ -194,59 +258,61 @@ function Home() {
             <div className="hero-watch-shell">
               <div className="hero-watch-ring-outer" />
               <img
-                  src="https://imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:500/height:500/https://cdn.gamma.app/5ofxzhzh7h3wl0r/generated-images/1-rKSrImqDhRJv01tqjmn.png@jpg"
-                  alt="Featured classic watch"
+                  src={hero.imageUrl}
+                  alt={hero.watchName || 'Featured classic watch'}
                   className="hero-watch-image"
                 />
             </div>
             <div className="flex w-full items-center justify-between rounded-2xl border border-slate-700/80 bg-slate-900/70 px-4 py-3 text-xs text-slate-300 hero-watch-meta">
               <div>
-                <p className="font-semibold text-slate-100">Midnight Steel Chrono</p>
-                <p className="text-[0.7rem] text-slate-400">Limited edition · 250 pieces</p>
+                <p className="font-semibold text-slate-100">{hero.watchName}</p>
+                <p className="text-[0.7rem] text-slate-400">{hero.watchSub}</p>
               </div>
-              <p className="font-semibold text-amber-300 hero-watch-price">₹5,999</p>
+              <p className="font-semibold text-amber-300 hero-watch-price">{hero.priceText}</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Categories / Collections */}
-      <section className="mx-auto max-w-6xl px-4 py-12 lg:px-6 home-inner">
-        <div className="mb-6 flex items-end justify-between gap-3 section-header">
-          <div>
-            <h2 className="text-xl font-semibold text-slate-50 sm:text-2xl section-title">
-              Collections
-            </h2>
-            <p className="text-sm text-slate-400 section-subtitle">
-              Explore our curated collections designed for every occasion.
-            </p>
+      {homeSections.includes('collections') ? (
+        <section className="mx-auto max-w-6xl px-4 py-12 lg:px-6 home-inner">
+          <div className="mb-6 flex items-end justify-between gap-3 section-header">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-50 sm:text-2xl section-title">
+                Collections
+              </h2>
+              <p className="text-sm text-slate-400 section-subtitle">
+                Explore our curated collections designed for every occasion.
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 card-grid card-grid--categories">
-          {categories.map((category) => (
-            <article
-              key={category.id}
-              className="group overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 shadow-sm shadow-black/40 transition hover:-translate-y-1 hover:border-amber-300/70 hover:shadow-xl hover:shadow-black/60 category-card"
-            >
-              <div className="relative h-40 overflow-hidden category-image">
-                <img
-                  src={category.image}
-                  alt={category.name}
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-110 group-hover:brightness-110"
-                />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent category-gradient" />
-              </div>
-              <div className="space-y-1 p-4 category-content">
-                <h3 className="text-sm font-semibold text-slate-50 category-name">
-                  {category.name}
-                </h3>
-                <p className="text-xs text-slate-400 category-desc">{category.description}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 card-grid card-grid--categories">
+            {collections.map((category) => (
+              <article
+                key={category.id}
+                className="group overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 shadow-sm shadow-black/40 transition hover:-translate-y-1 hover:border-amber-300/70 hover:shadow-xl hover:shadow-black/60 category-card"
+              >
+                <div className="relative h-40 overflow-hidden category-image">
+                  <img
+                    src={category.image}
+                    alt={category.title}
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-110 group-hover:brightness-110"
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent category-gradient" />
+                </div>
+                <div className="space-y-1 p-4 category-content">
+                  <h3 className="text-sm font-semibold text-slate-50 category-name">
+                    {category.title}
+                  </h3>
+                  <p className="text-xs text-slate-400 category-desc">{category.story}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* Featured Products
       <section className="bg-slate-950/80 py-12">
@@ -311,82 +377,88 @@ function Home() {
       </section> */}
 
       {/* Offer Banner */}
-      <section className="offer-section">
-        <div className="offer-card">
-          <p className="offer-kicker">Limited Time Offer</p>
-          <h2 className="offer-title">
-            Exclusive Deals – Up to <span>40% OFF</span> on Premium Watches
-          </h2>
-          <p className="offer-text">
-            Upgrade your collection with handpicked classics, available for a limited time at
-            exclusive prices. Once they&apos;re gone, they&apos;re gone.
-          </p>
-          <Link to="/product" className="btn-primary">
-            Shop Offers
-          </Link>
-        </div>
-      </section>
+      {homeSections.includes('offer') ? (
+        <section className="offer-section">
+          <div className="offer-card">
+            <p className="offer-kicker">Limited Time Offer</p>
+            <h2 className="offer-title">
+              Exclusive Deals – Up to <span>40% OFF</span> on Premium Watches
+            </h2>
+            <p className="offer-text">
+              Upgrade your collection with handpicked classics, available for a limited time at
+              exclusive prices. Once they&apos;re gone, they&apos;re gone.
+            </p>
+            <Link to="/product" className="btn-primary">
+              Shop Offers
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       {/* Why Choose Us */}
-      <section className="features-section">
-        <div className="mx-auto max-w-6xl px-4 lg:px-6 home-inner">
-          <div className="mb-6 text-center features-header">
-            <h2 className="text-xl font-semibold text-slate-50 sm:text-2xl features-title">
-              Why Choose PIKAPLACE
-            </h2>
-            <p className="mt-1 text-sm text-slate-400 features-subtitle">
-              Every watch is curated to meet the highest standards of craftsmanship.
-            </p>
+      {homeSections.includes('features') ? (
+        <section className="features-section">
+          <div className="mx-auto max-w-6xl px-4 lg:px-6 home-inner">
+            <div className="mb-6 text-center features-header">
+              <h2 className="text-xl font-semibold text-slate-50 sm:text-2xl features-title">
+                Why Choose PIKAPLACE
+              </h2>
+              <p className="mt-1 text-sm text-slate-400 features-subtitle">
+                Every watch is curated to meet the highest standards of craftsmanship.
+              </p>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 card-grid card-grid--features">
+              {features.map((feature) => (
+                <article
+                  key={feature.title}
+                  className="space-y-2 rounded-2xl border border-slate-800 bg-slate-900/70 p-5 text-center shadow-sm shadow-black/40 feature-card"
+                >
+                  <h3 className="text-sm font-semibold text-slate-50 feature-title">
+                    {feature.title}
+                  </h3>
+                  <p className="text-xs text-slate-400 feature-text">{feature.description}</p>
+                </article>
+              ))}
+            </div>
           </div>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 card-grid card-grid--features">
-            {features.map((feature) => (
-              <article
-                key={feature.title}
-                className="space-y-2 rounded-2xl border border-slate-800 bg-slate-900/70 p-5 text-center shadow-sm shadow-black/40 feature-card"
-              >
-                <h3 className="text-sm font-semibold text-slate-50 feature-title">
-                  {feature.title}
-                </h3>
-                <p className="text-xs text-slate-400 feature-text">{feature.description}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {/* Testimonials */}
-      <section className="testimonials-section">
-        <div className="mx-auto max-w-6xl px-4 lg:px-6 home-inner">
-          <div className="mb-6 text-center features-header">
-            <h2 className="text-xl font-semibold text-slate-50 sm:text-2xl features-title">
-              What Clients Say
-            </h2>
-            <p className="mt-1 text-sm text-slate-400 features-subtitle">
-              Stories from collectors who chose to invest in timeless design.
-            </p>
+      {homeSections.includes('testimonials') ? (
+        <section className="testimonials-section">
+          <div className="mx-auto max-w-6xl px-4 lg:px-6 home-inner">
+            <div className="mb-6 text-center features-header">
+              <h2 className="text-xl font-semibold text-slate-50 sm:text-2xl features-title">
+                What Clients Say
+              </h2>
+              <p className="mt-1 text-sm text-slate-400 features-subtitle">
+                Stories from collectors who chose to invest in timeless design.
+              </p>
+            </div>
+            <div className="grid gap-5 md:grid-cols-3 card-grid card-grid--testimonials">
+              {testimonials.map((testimonial) => (
+                <article
+                  key={testimonial.name}
+                  className="flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900/70 p-5 text-sm text-slate-300 shadow-sm shadow-black/40 testimonial-card"
+                >
+                  <p className="mb-3 text-xs text-amber-300 testimonial-stars">
+                    {Array.from({ length: testimonial.rating }).map((_, index) => (
+                      <span key={index}>★</span>
+                    ))}
+                  </p>
+                  <p className="mb-4 text-xs sm:text-sm testimonial-text">
+                    &ldquo;{testimonial.text}&rdquo;
+                  </p>
+                  <p className="text-xs font-semibold text-slate-100 testimonial-name">
+                    {testimonial.name}
+                  </p>
+                </article>
+              ))}
+            </div>
           </div>
-          <div className="grid gap-5 md:grid-cols-3 card-grid card-grid--testimonials">
-            {testimonials.map((testimonial) => (
-              <article
-                key={testimonial.name}
-                className="flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900/70 p-5 text-sm text-slate-300 shadow-sm shadow-black/40 testimonial-card"
-              >
-                <p className="mb-3 text-xs text-amber-300 testimonial-stars">
-                  {Array.from({ length: testimonial.rating }).map((_, index) => (
-                    <span key={index}>★</span>
-                  ))}
-                </p>
-                <p className="mb-4 text-xs sm:text-sm testimonial-text">
-                  &ldquo;{testimonial.text}&rdquo;
-                </p>
-                <p className="text-xs font-semibold text-slate-100 testimonial-name">
-                  {testimonial.name}
-                </p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {/* Newsletter */}
       {/* <section className="newsletter-section">

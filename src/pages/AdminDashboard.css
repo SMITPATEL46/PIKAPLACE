@@ -75,6 +75,105 @@
   margin-top: 1.2rem;
 }
 
+.admin-edits-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;}
+
+.admin-edits-row {
+  display: grid;
+  gap: 4rem;
+  align-items: start;
+}
+
+.admin-edits-row--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-edits-row--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-edits-row .admin-card--form {
+  max-width: none;
+  width: 100%;
+  height: 100%;
+}
+
+.admin-edits-row .admin-field input,
+.admin-edits-row .admin-field select {
+  min-height: 42px;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+.admin-edits-row .admin-card-title {
+  margin-bottom: 0.5rem;
+}
+
+.admin-edits-row--three .admin-card {
+  min-height: 430px;
+}
+
+.admin-edits-row--two .admin-card {
+  min-height: 560px;
+}
+
+.admin-toggle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.admin-toggle-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.admin-toggle-title {
+  color: #e5e7eb;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.admin-toggle-sub {
+  margin-top: 0;
+}
+
+.admin-toggle-btn--danger {
+  color: #fca5a5;
+}
+
+.admin-form-actions--space-between {
+  justify-content: space-between;
+}
+
+.admin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 50;
+}
+
+.admin-modal {
+  width: min(560px, 100%);
+  border-radius: 1rem;
+  border: 1px solid rgba(30, 64, 175, 0.5);
+  background: radial-gradient(circle at top left, #020617, #020617 70%, #020617);
+  box-shadow: 0 25px 70px rgba(15, 23, 42, 0.95);
+  padding: 1rem;
+}
+
 .admin-card {
   border-radius: 1.25rem;
   border: 1px solid rgba(30, 64, 175, 0.5);
@@ -153,6 +252,21 @@
   color: #38bdf8;
   font-size: 0.75rem;
   cursor: pointer;
+}
+
+.admin-link-button--danger {
+  color: #fca5a5;
+}
+
+.admin-image-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.admin-image-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .admin-form {
@@ -357,6 +471,32 @@
   .admin-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+  .admin-edits-row {
+    grid-template-columns: 1fr;
+  }
+  .admin-stock-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .admin-card--form {
+    max-width: 100%;
+  }
+  .admin-field input,
+  .admin-field select {
+    font-size: 0.9rem;
+    padding: 0.55rem 0.85rem;
+  }
+  .admin-form {
+    gap: 0.9rem;
+  }
+}
+
+@media (max-width: 1200px) and (min-width: 769px) {
+  .admin-edits-row--three {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .admin-edits-row--two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

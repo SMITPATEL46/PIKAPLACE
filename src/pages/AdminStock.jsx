@@ -61,8 +61,17 @@ const loadProducts = () => {
   }
 }
 
+const normalizeImageList = (item) => {
+  const list = []
+  if (Array.isArray(item?.images)) list.push(...item.images)
+  if (item?.image) list.push(item.image)
+  const cleaned = Array.from(new Set(list.map((x) => String(x || '').trim()).filter(Boolean)))
+  return cleaned.length ? cleaned : ['']
+}
+
 function AdminStock() {
   const [stock, setStock] = useState(loadProducts)
+  const [autoRemoved, setAutoRemoved] = useState([])
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({
     category: 'Formal Dress',
@@ -70,6 +79,7 @@ function AdminStock() {
     specs: '',
     priceValue: '',
     image: '',
+    images: [''],
     available: '',
     reorderAt: '',
   })
@@ -82,6 +92,7 @@ function AdminStock() {
       specs: item.specs,
       priceValue: String(item.priceValue),
       image: item.image,
+      images: normalizeImageList(item),
       available: String(item.available),
       reorderAt: String(item.reorderAt),
     })
@@ -95,6 +106,7 @@ function AdminStock() {
       specs: '',
       priceValue: '',
       image: '',
+      images: [''],
       available: '',
       reorderAt: '',
     })
@@ -103,6 +115,10 @@ function AdminStock() {
   const handleSubmitStock = (e) => {
     e.preventDefault()
     if (!form.name.trim()) return
+    const images = (Array.isArray(form.images) ? form.images : [])
+      .map((x) => String(x || '').trim())
+      .filter(Boolean)
+    const primaryImage = images[0] || form.image.trim()
 
     const next = {
       id: editingId ?? Date.now(),
@@ -110,16 +126,32 @@ function AdminStock() {
       name: form.name.trim(),
       specs: form.specs.trim(),
       priceValue: Number(form.priceValue) || 0,
-      image: form.image.trim(),
+      image: primaryImage,
+      images,
       available: Number(form.available) || 0,
       reorderAt: Number(form.reorderAt) || 0,
     }
 
     setStock((prev) => {
+      let updated = prev
       if (editingId) {
-        return prev.map((item) => (item.id === editingId ? next : item))
+        updated = prev.map((item) => (item.id === editingId ? next : item))
+      } else {
+        updated = [...prev, next]
       }
-      return [...prev, next]
+      const kept = []
+      const removedNow = []
+      updated.forEach((item) => {
+        if ((Number(item.available) || 0) <= 0) {
+          removedNow.push(item)
+        } else {
+          kept.push(item)
+        }
+      })
+      if (removedNow.length) {
+        setAutoRemoved((prevRemoved) => [...removedNow, ...prevRemoved])
+      }
+      return kept
     })
 
     resetForm()
@@ -132,6 +164,29 @@ function AdminStock() {
       // ignore storage errors
     }
   }, [stock])
+
+  const handleDelete = (id) => {
+    setStock((prev) => prev.filter((item) => item.id !== id))
+  }
+
+  const updateImageField = (index, value) => {
+    setForm((prev) => {
+      const nextImages = [...prev.images]
+      nextImages[index] = value
+      return { ...prev, images: nextImages }
+    })
+  }
+
+  const addImageField = () => {
+    setForm((prev) => ({ ...prev, images: [...prev.images, ''] }))
+  }
+
+  const removeImageField = (index) => {
+    setForm((prev) => {
+      if (prev.images.length <= 1) return prev
+      return { ...prev, images: prev.images.filter((_, i) => i !== index) }
+    })
+  }
 
   return (
     <>
@@ -199,6 +254,14 @@ function AdminStock() {
                             >
                               Edit
                             </button>
+                            <button
+                              type="button"
+                              className="admin-link-button admin-link-button--danger"
+                              onClick={() => handleDelete(item.id)}
+                              style={{ marginLeft: 8 }}
+                            >
+                              Delete
+                            </button>
                           </td>
                         </tr>
                       )
@@ -206,6 +269,22 @@ function AdminStock() {
                   </tbody>
                 </table>
               </div>
+
+              {autoRemoved.length > 0 && (
+                <div className="admin-card admin-card--info">
+                  <h3 className="admin-card-title">Auto removed (stock 0)</h3>
+                  <p className="admin-subtitle">
+                    These items were automatically removed because their available quantity became 0.
+                  </p>
+                  <ul className="admin-auto-removed-list">
+                    {autoRemoved.map((item) => (
+                      <li key={item.id}>
+                        <strong>{item.name}</strong> — {item.category} (was {item.available} pcs)
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <div className="admin-card admin-card--form">
                 <h3 className="admin-card-title">
@@ -259,6 +338,33 @@ function AdminStock() {
                       onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
                     />
                   </label>
+                  <div className="admin-field">
+                    <span>More image URLs</span>
+                    <div className="admin-image-list">
+                      {form.images.map((imageUrl, index) => (
+                        <div key={`img_${index}`} className="admin-image-row">
+                          <input
+                            type="text"
+                            placeholder={`https://image-${index + 1}...`}
+                            value={imageUrl}
+                            onChange={(e) => updateImageField(index, e.target.value)}
+                          />
+                          {form.images.length > 1 && (
+                            <button
+                              type="button"
+                              className="admin-link-button admin-link-button--danger"
+                              onClick={() => removeImageField(index)}
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" className="admin-secondary-btn" onClick={addImageField}>
+                      Add more image
+                    </button>
+                  </div>
                   <div className="admin-field-row">
                     <label className="admin-field">
                       <span>Available stock</span>
