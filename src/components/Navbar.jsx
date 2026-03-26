@@ -1,7 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import './Navbar.css'
+<<<<<<< Updated upstream
 import { getCart, getCurrentUser } from '../utils/session.js'
+=======
+import { apiFetch } from '../api/apiClient.js'
+import { getCurrentUser } from '../utils/session.js'
+import { auth } from '../firebase/firebaseClient.js'
+import { signOut } from 'firebase/auth'
+>>>>>>> Stashed changes
 
 function Navbar() {
   const [open, setOpen] = useState(false)
@@ -55,6 +62,8 @@ function Navbar() {
 
     const onStorage = () => loadUser()
     window.addEventListener('storage', onStorage)
+    const onUserChanged = () => loadUser()
+    window.addEventListener('pikaplace-user-changed', onUserChanged)
     return () => window.removeEventListener('storage', onStorage)
   }, [])
 
@@ -65,9 +74,15 @@ function Navbar() {
         setCartCount(0)
         return
       }
+<<<<<<< Updated upstream
       const items = getCart(u.email)
       const count = items.reduce((sum, i) => sum + (Number(i?.quantity) || 1), 0)
       setCartCount(count)
+=======
+      apiFetch('/api/cart/count')
+        .then((data) => setCartCount(Number(data?.count) || 0))
+        .catch(() => setCartCount(0))
+>>>>>>> Stashed changes
     }
 
     refreshCart()
@@ -77,7 +92,11 @@ function Navbar() {
       window.removeEventListener('storage', refreshCart)
       window.removeEventListener('pikaplace-cart', refreshCart)
     }
+<<<<<<< Updated upstream
   }, [user?.email, user?.role])
+=======
+  }, [user?.role])
+>>>>>>> Stashed changes
 
   const handleLogout = () => {
     localStorage.removeItem('user')
@@ -88,12 +107,14 @@ function Navbar() {
     }
     setUser(null)
     setOpen(false)
+    // Best-effort sign-out from Firebase session.
+    signOut(auth).catch(() => {})
     // Hard redirect to fully reset all forms and state
     window.location.href = '/auth'
   }
 
-  const displayName = user?.name?.trim() || user?.email?.split?.('@')?.[0] || ''
-  const avatarLetter = (displayName || user?.email || 'U').trim().charAt(0).toUpperCase()
+  const displayName = user?.name?.trim() || user?.phone_number || ''
+  const avatarLetter = (displayName || 'U').trim().charAt(0).toUpperCase()
 
   return (
     <header className="nav" ref={navRef} onMouseLeave={handleNavMouseLeave}>
@@ -140,7 +161,11 @@ function Navbar() {
               Stock
             </Link>
             <Link to="/admin/home" className="nav__link" onClick={() => setOpen(false)}>
+<<<<<<< Updated upstream
               Edit's
+=======
+              Edits
+>>>>>>> Stashed changes
             </Link>
             <Link to="/admin/product-report" className="nav__link" onClick={() => setOpen(false)}>
               Product Report
@@ -162,7 +187,7 @@ function Navbar() {
               <span className="nav__admin-name">
                 {user.role === 'admin' ? 'Admin' : displayName || 'Customer'}
               </span>
-              <span className="nav__admin-email">{user.email}</span>
+              <span className="nav__admin-email">{user.phone_number}</span>
             </div>
             <Link
               to="/profile"

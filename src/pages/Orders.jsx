@@ -1,12 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import Navbar from '../components/Navbar.jsx'
+<<<<<<< Updated upstream
 import { getCurrentUser, getOrders } from '../utils/session.js'
+=======
+import { apiFetch } from '../api/apiClient.js'
+import { getCurrentUser } from '../utils/session.js'
+>>>>>>> Stashed changes
 import './Orders.css'
 
 const formatInr = (value) => `₹${Number(value || 0).toLocaleString('en-IN')}`
 
 export default function Orders() {
   const user = getCurrentUser()
+<<<<<<< Updated upstream
   const email = user?.email
 
   const [orders, setOrders] = useState(() => (email ? getOrders(email) : []))
@@ -24,6 +30,31 @@ export default function Orders() {
       window.removeEventListener('pikaplace-orders', reload)
     }
   }, [email])
+=======
+  const phoneNumber = user?.phone_number
+  const [orders, setOrders] = useState([])
+
+  useEffect(() => {
+    let cancelled = false
+    const reload = async () => {
+      try {
+        const data = await apiFetch('/api/orders')
+        if (cancelled) return
+        setOrders(data?.items || [])
+      } catch {
+        if (!cancelled) setOrders([])
+      }
+    }
+    reload()
+    window.addEventListener('storage', reload)
+    window.addEventListener('pikaplace-orders', reload)
+    return () => {
+      cancelled = true
+      window.removeEventListener('storage', reload)
+      window.removeEventListener('pikaplace-orders', reload)
+    }
+  }, [user?.id])
+>>>>>>> Stashed changes
 
   const sorted = useMemo(() => {
     return [...orders].sort((a, b) => new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0))
@@ -36,7 +67,11 @@ export default function Orders() {
         <section className="orders-inner">
           <div className="orders-head">
             <h2>Your Orders</h2>
+<<<<<<< Updated upstream
             <p className="orders-muted">Past order history for {email}</p>
+=======
+              <p className="orders-muted">Past order history for {phoneNumber}</p>
+>>>>>>> Stashed changes
           </div>
 
           {sorted.length === 0 ? (

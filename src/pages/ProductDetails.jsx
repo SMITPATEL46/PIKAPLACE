@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Navbar from '../components/Navbar.jsx'
+<<<<<<< Updated upstream
 import {
   addToCart,
   getCurrentUser,
@@ -20,13 +21,25 @@ const loadProducts = () => {
   }
 }
 
+=======
+import { apiFetch } from '../api/apiClient.js'
+import { getCurrentUser } from '../utils/session.js'
+import './ProductDetails.css'
+
+>>>>>>> Stashed changes
 function ProductDetails() {
   const { productId } = useParams()
   const navigate = useNavigate()
   const user = getCurrentUser()
+<<<<<<< Updated upstream
   const email = user?.email
   const isAdmin = user?.role === 'admin'
   const [products, setProducts] = useState(loadProducts)
+=======
+  const phoneNumber = user?.phone_number
+  const isAdmin = user?.role === 'admin'
+  const [products, setProducts] = useState([])
+>>>>>>> Stashed changes
   const [reviews, setReviews] = useState([])
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [rating, setRating] = useState(5)
@@ -41,9 +54,18 @@ function ProductDetails() {
   )
 
   const myReview = useMemo(() => {
+<<<<<<< Updated upstream
     if (!numericId || !email) return null
     return getUserProductReview(numericId, email)
   }, [numericId, email, reviews.length])
+=======
+    if (!numericId || !phoneNumber) return null
+    const match = reviews.find(
+      (r) => String(r?.userEmail || '').toLowerCase() === String(phoneNumber).toLowerCase(),
+    )
+    return match || null
+  }, [numericId, phoneNumber, reviews])
+>>>>>>> Stashed changes
 
   const averageRating = useMemo(() => {
     if (!reviews.length) return 0
@@ -79,11 +101,29 @@ function ProductDetails() {
   }, [product])
 
   useEffect(() => {
+<<<<<<< Updated upstream
     setProducts(loadProducts())
+=======
+    let cancelled = false
+    const loadProductsFromBackend = async () => {
+      try {
+        const data = await apiFetch('/api/products')
+        if (cancelled) return
+        setProducts(data?.items || [])
+      } catch {
+        if (!cancelled) setProducts([])
+      }
+    }
+    loadProductsFromBackend()
+    return () => {
+      cancelled = true
+    }
+>>>>>>> Stashed changes
   }, [])
 
   useEffect(() => {
     if (!numericId) return
+<<<<<<< Updated upstream
     const reload = () => setReviews(getProductReviews(numericId))
     reload()
     window.addEventListener('storage', reload)
@@ -91,6 +131,17 @@ function ProductDetails() {
     return () => {
       window.removeEventListener('storage', reload)
       window.removeEventListener('pikaplace-reviews', reload)
+=======
+    let cancelled = false
+    const reload = async () => {
+      const data = await apiFetch(`/api/products/${numericId}/reviews`)
+      if (cancelled) return
+      setReviews(data?.items || [])
+    }
+    reload()
+    return () => {
+      cancelled = true
+>>>>>>> Stashed changes
     }
   }, [numericId])
 
@@ -109,7 +160,11 @@ function ProductDetails() {
     setSubmitError('')
     setDidSubmit(false)
 
+<<<<<<< Updated upstream
     if (!email) {
+=======
+    if (!phoneNumber) {
+>>>>>>> Stashed changes
       setSubmitError('Please login to add a rating and comment.')
       return
     }
@@ -121,6 +176,7 @@ function ProductDetails() {
       return
     }
 
+<<<<<<< Updated upstream
     upsertProductReview(numericId, {
       userEmail: email,
       userName: user?.name || user?.fullName || email,
@@ -128,6 +184,20 @@ function ProductDetails() {
       comment: safeComment,
     })
     setDidSubmit(true)
+=======
+    apiFetch(`/api/products/${numericId}/reviews`, {
+      method: 'POST',
+      body: { rating: safeRating, comment: safeComment },
+    })
+      .then(async () => {
+        const data = await apiFetch(`/api/products/${numericId}/reviews`)
+        setReviews(data?.items || [])
+        setDidSubmit(true)
+      })
+      .catch((err) => {
+        setSubmitError(err?.message || 'Failed to submit review.')
+      })
+>>>>>>> Stashed changes
   }
 
   if (!product) {
@@ -249,8 +319,23 @@ function ProductDetails() {
                         })
                         return
                       }
+<<<<<<< Updated upstream
                       addToCart(current.email, product, 1)
                       navigate('/cart')
+=======
+                      apiFetch('/api/cart/items', {
+                        method: 'POST',
+                        body: { productId: product.id, quantity: 1 },
+                      })
+                        .then(() => {
+                          window.dispatchEvent(new Event('pikaplace-cart'))
+                          navigate('/cart')
+                        })
+                        .catch((e) => {
+                          // eslint-disable-next-line no-alert
+                          alert(e?.message || 'Failed to add to cart.')
+                        })
+>>>>>>> Stashed changes
                     }}
                   >
                     Add to Cart
@@ -278,7 +363,11 @@ function ProductDetails() {
           <form className="review-form" onSubmit={handleSubmitReview}>
             <div className="review-form-head">
               <h3>{myReview ? 'Update your review' : 'Add your review'}</h3>
+<<<<<<< Updated upstream
               {email ? <span className="review-muted">Signed in as {email}</span> : null}
+=======
+              {phoneNumber ? <span className="review-muted">Signed in as {phoneNumber}</span> : null}
+>>>>>>> Stashed changes
             </div>
 
             <div className="review-form-grid">

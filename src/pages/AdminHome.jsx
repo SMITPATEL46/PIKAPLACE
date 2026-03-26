@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
 import Navbar from '../components/Navbar.jsx'
 import './AdminDashboard.css'
+<<<<<<< Updated upstream
 
 const STORAGE_KEY = 'home_hero'
 const ABOUT_STORAGE_KEY = 'about_content'
 const HOME_COLLECTIONS_KEY = 'home_collections'
 const ABOUT_BLOGS_KEY = 'about_blogs'
+=======
+import { CMS_KEYS, fetchCmsKeys, saveCmsValue } from '../api/cmsClient.js'
+>>>>>>> Stashed changes
 
 const defaultHero = {
   tag: 'New arrivals · 2026 collection',
@@ -126,6 +130,7 @@ const defaultAboutBlogs = [
   },
 ]
 
+<<<<<<< Updated upstream
 const loadHero = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -147,10 +152,16 @@ const loadAbout = () => {
     return defaultAbout
   }
 }
+=======
+const loadHero = () => defaultHero
+
+const loadAbout = () => defaultAbout
+>>>>>>> Stashed changes
 
 function AdminHome() {
   const [form, setForm] = useState(loadHero)
   const [aboutForm, setAboutForm] = useState(loadAbout)
+<<<<<<< Updated upstream
   const [collections, setCollections] = useState(() => {
     try {
       const raw = localStorage.getItem(HOME_COLLECTIONS_KEY)
@@ -173,10 +184,15 @@ function AdminHome() {
       return defaultAboutBlogs
     }
   })
+=======
+  const [collections, setCollections] = useState(defaultHomeCollections)
+  const [aboutBlogs, setAboutBlogs] = useState(defaultAboutBlogs)
+>>>>>>> Stashed changes
   const [popup, setPopup] = useState({ open: false, target: 'collection' })
   const [popupForm, setPopupForm] = useState({ image: '', title: '', story: '' })
 
   useEffect(() => {
+<<<<<<< Updated upstream
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(form))
     } catch {
@@ -206,6 +222,44 @@ function AdminHome() {
     } catch {
       // ignore
     }
+=======
+    fetchCmsKeys([CMS_KEYS.homeHero, CMS_KEYS.aboutContent, CMS_KEYS.homeCollections, CMS_KEYS.aboutBlogs])
+      .then((values) => {
+        if (values[CMS_KEYS.homeHero]) setForm((prev) => ({ ...prev, ...values[CMS_KEYS.homeHero] }))
+        if (values[CMS_KEYS.aboutContent]) setAboutForm((prev) => ({ ...prev, ...values[CMS_KEYS.aboutContent] }))
+        if (Array.isArray(values[CMS_KEYS.homeCollections])) setCollections(values[CMS_KEYS.homeCollections])
+        if (Array.isArray(values[CMS_KEYS.aboutBlogs])) setAboutBlogs(values[CMS_KEYS.aboutBlogs])
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      saveCmsValue(CMS_KEYS.homeHero, form).catch(() => {})
+    }, 350)
+    return () => window.clearTimeout(t)
+  }, [form])
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      saveCmsValue(CMS_KEYS.aboutContent, aboutForm).catch(() => {})
+    }, 350)
+    return () => window.clearTimeout(t)
+  }, [aboutForm])
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      saveCmsValue(CMS_KEYS.homeCollections, collections).catch(() => {})
+    }, 350)
+    return () => window.clearTimeout(t)
+  }, [collections])
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      saveCmsValue(CMS_KEYS.aboutBlogs, aboutBlogs).catch(() => {})
+    }, 350)
+    return () => window.clearTimeout(t)
+>>>>>>> Stashed changes
   }, [aboutBlogs])
 
   const handleChange = (field) => (e) => {

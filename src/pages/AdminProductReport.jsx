@@ -1,25 +1,27 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Navbar from '../components/Navbar.jsx'
+import { apiFetch } from '../api/apiClient.js'
 import './AdminDashboard.css'
 
-const salesSummary = {
-  today: 12,
-  month: 184,
-  year: 1625,
-  allTime: 4320,
-}
-
-const productSales = [
-  { name: 'Aurelius Classic Gold', sold: 920 },
-  { name: 'Midnight Steel Chrono', sold: 780 },
-  { name: 'Noir Heritage Leather', sold: 650 },
-  { name: 'Ivory Dial Heritage', sold: 430 },
-]
-
 function AdminProductReport() {
+  const [report, setReport] = useState({
+    salesSummary: { today: 0, month: 0, year: 0, allTime: 0 },
+    productSales: [],
+  })
+
+  useEffect(() => {
+    apiFetch('/api/admin/reports/products')
+      .then((data) => {
+        if (data?.salesSummary && Array.isArray(data?.productSales)) {
+          setReport(data)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
   const maxSold = useMemo(
-    () => Math.max(...productSales.map((p) => p.sold)),
-    [],
+    () => Math.max(...(report.productSales || []).map((p) => p?.sold || 0), 0),
+    [report.productSales],
   )
 
   return (
@@ -43,19 +45,19 @@ function AdminProductReport() {
                 <div className="admin-kpi-grid">
                   <div className="admin-kpi">
                     <span className="admin-kpi-label">Today</span>
-                    <span className="admin-kpi-value">{salesSummary.today}</span>
+                    <span className="admin-kpi-value">{report.salesSummary.today}</span>
                   </div>
                   <div className="admin-kpi">
                     <span className="admin-kpi-label">This month</span>
-                    <span className="admin-kpi-value">{salesSummary.month}</span>
+                    <span className="admin-kpi-value">{report.salesSummary.month}</span>
                   </div>
                   <div className="admin-kpi">
                     <span className="admin-kpi-label">This year</span>
-                    <span className="admin-kpi-value">{salesSummary.year}</span>
+                    <span className="admin-kpi-value">{report.salesSummary.year}</span>
                   </div>
                   <div className="admin-kpi">
                     <span className="admin-kpi-label">All time</span>
-                    <span className="admin-kpi-value">{salesSummary.allTime}</span>
+                    <span className="admin-kpi-value">{report.salesSummary.allTime}</span>
                   </div>
                 </div>
               </div>
@@ -63,8 +65,8 @@ function AdminProductReport() {
               <div className="admin-card admin-card--chart">
                 <h3 className="admin-card-title">Top selling products</h3>
                 <div className="admin-circle-grid">
-                  {productSales.map((p) => {
-                    const ratio = p.sold / maxSold
+                  {(report.productSales || []).map((p) => {
+                    const ratio = maxSold ? (p?.sold || 0) / maxSold : 0
                     const angle = ratio * 360
                     const percent = Math.round(ratio * 100)
                     return (

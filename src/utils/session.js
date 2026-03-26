@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 export function readJson(key, fallback) {
   try {
     const raw = localStorage.getItem(key)
@@ -181,3 +182,19 @@ export function recordUserLogin(email, role = 'customer') {
   writeJson(LOGIN_EVENTS_KEY, next)
 }
 
+=======
+export function getCurrentUser() {
+  try {
+    const raw = localStorage.getItem('user')
+    if (!raw) return null
+    const user = JSON.parse(raw)
+    if (!user || typeof user !== 'object') return null
+    if (!user.role) return null
+    if (!user.phone_number && !user.email) return null
+    return user
+  } catch {
+    return null
+  }
+}
+
+>>>>>>> Stashed changes

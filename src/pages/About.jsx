@@ -1,9 +1,14 @@
+import { useEffect, useState } from 'react'
 import Navbar from '../components/Navbar.jsx'
 import './About.css'
+import { CMS_KEYS, fetchCmsKeys } from '../api/cmsClient.js'
 
+<<<<<<< Updated upstream
 const ABOUT_STORAGE_KEY = 'about_content'
 const ABOUT_BLOGS_KEY = 'about_blogs'
 
+=======
+>>>>>>> Stashed changes
 const defaultAbout = {
   heroPill: 'About PIKAPLACE',
   heroTitleMain: 'Timeless watches, crafted',
@@ -51,6 +56,7 @@ const defaultAbout = {
   helpHours: 'Mon – Sat, 10am to 7pm IST',
 }
 
+<<<<<<< Updated upstream
 const loadAboutConfig = () => {
   try {
     const raw = localStorage.getItem(ABOUT_STORAGE_KEY)
@@ -61,6 +67,9 @@ const loadAboutConfig = () => {
     return defaultAbout
   }
 }
+=======
+const loadAboutConfig = () => defaultAbout
+>>>>>>> Stashed changes
 
 const defaultAboutBlogs = [
   {
@@ -92,6 +101,7 @@ const defaultAboutBlogs = [
   },
 ]
 
+<<<<<<< Updated upstream
 const loadAboutBlogs = () => {
   try {
     const raw = localStorage.getItem(ABOUT_BLOGS_KEY)
@@ -107,6 +117,27 @@ const loadAboutBlogs = () => {
 function About() {
   const about = loadAboutConfig()
   const aboutBlogs = loadAboutBlogs()
+=======
+const loadAboutBlogs = () => defaultAboutBlogs
+
+function About() {
+  const [about, setAbout] = useState(() => loadAboutConfig())
+  const [aboutBlogs, setAboutBlogs] = useState(() => loadAboutBlogs())
+
+  useEffect(() => {
+    fetchCmsKeys([CMS_KEYS.aboutContent, CMS_KEYS.aboutBlogs])
+      .then((values) => {
+        if (values[CMS_KEYS.aboutContent]) {
+          setAbout((prev) => ({ ...prev, ...values[CMS_KEYS.aboutContent] }))
+        }
+        if (Array.isArray(values[CMS_KEYS.aboutBlogs])) {
+          setAboutBlogs(values[CMS_KEYS.aboutBlogs])
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+>>>>>>> Stashed changes
   const aboutImages = [
     { id: 'hero', url: about.heroMainImage },
     { id: 'luxury', url: about.heroCard1Image },

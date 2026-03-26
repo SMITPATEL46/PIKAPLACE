@@ -1,5 +1,8 @@
+/* eslint-disable no-unused-vars, react/prop-types */
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar.jsx'
+import { CMS_KEYS, fetchCmsKeys } from '../api/cmsClient.js'
 import './Home.css'
 
 const categories = [
@@ -103,10 +106,13 @@ const features = [
   },
 ]
 
+<<<<<<< Updated upstream
 const HERO_STORAGE_KEY = 'home_hero'
 const HOME_SECTION_KEYS_KEY = 'home_section_keys'
 const HOME_COLLECTIONS_KEY = 'home_collections'
 
+=======
+>>>>>>> Stashed changes
 const defaultHomeSectionKeys = ['collections', 'offer', 'features', 'testimonials']
 
 const defaultCollections = categories.map((x) => ({
@@ -117,7 +123,11 @@ const defaultCollections = categories.map((x) => ({
 }))
 
 const loadHeroConfig = () => {
+<<<<<<< Updated upstream
   const fallback = {
+=======
+  return {
+>>>>>>> Stashed changes
     tag: 'New arrivals · 2026 collection',
     titleMain: 'Timeless Watches for',
     titleHighlight: 'Timeless Style',
@@ -129,6 +139,7 @@ const loadHeroConfig = () => {
     imageUrl:
       'https://imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:500/height:500/https://cdn.gamma.app/5ofxzhzh7h3wl0r/generated-images/1-rKSrImqDhRJv01tqjmn.png@jpg',
   }
+<<<<<<< Updated upstream
 
   try {
     const raw = localStorage.getItem(HERO_STORAGE_KEY)
@@ -138,6 +149,8 @@ const loadHeroConfig = () => {
   } catch {
     return fallback
   }
+=======
+>>>>>>> Stashed changes
 }
 
 const testimonials = [
@@ -159,6 +172,7 @@ const testimonials = [
 ]
 
 const loadHomeSectionKeys = () => {
+<<<<<<< Updated upstream
   try {
     const raw = localStorage.getItem(HOME_SECTION_KEYS_KEY)
     if (!raw) return defaultHomeSectionKeys
@@ -180,6 +194,13 @@ const loadCollections = () => {
   } catch {
     return defaultCollections
   }
+=======
+  return defaultHomeSectionKeys
+}
+
+const loadCollections = () => {
+  return defaultCollections
+>>>>>>> Stashed changes
 }
 
 function StarRating({ value }) {
@@ -207,9 +228,31 @@ function StarRating({ value }) {
 }
 
 function Home() {
+<<<<<<< Updated upstream
   const hero = loadHeroConfig()
   const homeSections = loadHomeSectionKeys()
   const collections = loadCollections()
+=======
+  const [hero, setHero] = useState(() => loadHeroConfig())
+  const [homeSections, setHomeSections] = useState(() => loadHomeSectionKeys())
+  const [collections, setCollections] = useState(() => loadCollections())
+
+  useEffect(() => {
+    fetchCmsKeys([CMS_KEYS.homeHero, CMS_KEYS.homeSectionKeys, CMS_KEYS.homeCollections])
+      .then((values) => {
+        if (values[CMS_KEYS.homeHero]) {
+          setHero((prev) => ({ ...prev, ...values[CMS_KEYS.homeHero] }))
+        }
+        if (Array.isArray(values[CMS_KEYS.homeSectionKeys])) {
+          setHomeSections(values[CMS_KEYS.homeSectionKeys])
+        }
+        if (Array.isArray(values[CMS_KEYS.homeCollections])) {
+          setCollections(values[CMS_KEYS.homeCollections])
+        }
+      })
+      .catch(() => {})
+  }, [])
+>>>>>>> Stashed changes
 
   return (
     <>

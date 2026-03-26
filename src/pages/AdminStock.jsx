@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Navbar from '../components/Navbar.jsx'
+import { apiFetch } from '../api/apiClient.js'
 import './AdminDashboard.css'
 
 const defaultProducts = [
@@ -49,16 +50,12 @@ const defaultProducts = [
   },
 ]
 
-const loadProducts = () => {
-  try {
-    const raw = localStorage.getItem('products')
-    if (!raw) return defaultProducts
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed) || parsed.length === 0) return defaultProducts
-    return parsed
-  } catch {
-    return defaultProducts
-  }
+const normalizeImageList = (item) => {
+  const list = []
+  if (Array.isArray(item?.images)) list.push(...item.images)
+  if (item?.image) list.push(item.image)
+  const cleaned = Array.from(new Set(list.map((x) => String(x || '').trim()).filter(Boolean)))
+  return cleaned.length ? cleaned : ['']
 }
 
 const normalizeImageList = (item) => {
@@ -70,7 +67,11 @@ const normalizeImageList = (item) => {
 }
 
 function AdminStock() {
+<<<<<<< Updated upstream
   const [stock, setStock] = useState(loadProducts)
+=======
+  const [stock, setStock] = useState(defaultProducts)
+>>>>>>> Stashed changes
   const [autoRemoved, setAutoRemoved] = useState([])
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({
@@ -112,7 +113,23 @@ function AdminStock() {
     })
   }
 
-  const handleSubmitStock = (e) => {
+  const refreshStock = async () => {
+    try {
+      const data = await apiFetch('/api/admin/products')
+      setStock(data?.items || [])
+    } catch {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to load products from backend.')
+      setStock(defaultProducts)
+    }
+  }
+
+  useEffect(() => {
+    refreshStock()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleSubmitStock = async (e) => {
     e.preventDefault()
     if (!form.name.trim()) return
     const images = (Array.isArray(form.images) ? form.images : [])
@@ -120,8 +137,12 @@ function AdminStock() {
       .filter(Boolean)
     const primaryImage = images[0] || form.image.trim()
 
-    const next = {
-      id: editingId ?? Date.now(),
+    const images = (Array.isArray(form.images) ? form.images : [])
+      .map((x) => String(x || '').trim())
+      .filter(Boolean)
+    const primaryImage = images[0] || form.image.trim()
+
+    const payload = {
       category: form.category,
       name: form.name.trim(),
       specs: form.specs.trim(),
@@ -132,6 +153,7 @@ function AdminStock() {
       reorderAt: Number(form.reorderAt) || 0,
     }
 
+<<<<<<< Updated upstream
     setStock((prev) => {
       let updated = prev
       if (editingId) {
@@ -155,15 +177,69 @@ function AdminStock() {
     })
 
     resetForm()
+=======
+    try {
+      if (editingId) {
+        if ((payload.available || 0) <= 0) {
+          setAutoRemoved((prevRemoved) => [
+            { id: editingId, name: payload.name, category: payload.category, available: payload.available },
+            ...prevRemoved,
+          ])
+          await apiFetch(`/api/admin/products/${editingId}`, { method: 'DELETE' })
+        } else {
+          await apiFetch(`/api/admin/products/${editingId}`, { method: 'PUT', body: payload })
+        }
+      } else {
+        if ((payload.available || 0) > 0) {
+          await apiFetch('/api/admin/products', { method: 'POST', body: payload })
+        } else {
+          setAutoRemoved((prevRemoved) => [
+            { id: Date.now(), name: payload.name, category: payload.category, available: payload.available },
+            ...prevRemoved,
+          ])
+        }
+      }
+      await refreshStock()
+      resetForm()
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(err)
+      // eslint-disable-next-line no-alert
+      alert(err?.message || 'Failed to save product.')
+    }
+>>>>>>> Stashed changes
   }
 
-  useEffect(() => {
+  const handleDelete = async (id) => {
     try {
-      localStorage.setItem('products', JSON.stringify(stock))
-    } catch {
-      // ignore storage errors
+      await apiFetch(`/api/admin/products/${id}`, { method: 'DELETE' })
+      await refreshStock()
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(err)
+      // eslint-disable-next-line no-alert
+      alert(err?.message || 'Failed to delete product.')
     }
-  }, [stock])
+  }
+
+  const updateImageField = (index, value) => {
+    setForm((prev) => {
+      const nextImages = [...prev.images]
+      nextImages[index] = value
+      return { ...prev, images: nextImages }
+    })
+  }
+
+  const addImageField = () => {
+    setForm((prev) => ({ ...prev, images: [...prev.images, ''] }))
+  }
+
+  const removeImageField = (index) => {
+    setForm((prev) => {
+      if (prev.images.length <= 1) return prev
+      return { ...prev, images: prev.images.filter((_, i) => i !== index) }
+    })
+  }
 
   const handleDelete = (id) => {
     setStock((prev) => prev.filter((item) => item.id !== id))

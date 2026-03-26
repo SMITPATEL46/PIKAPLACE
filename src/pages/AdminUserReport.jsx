@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import { useMemo, useState } from 'react'
 import Navbar from '../components/Navbar.jsx'
 import { getAllUsers, getCurrentUser, getLoginEvents, getOrders, setAllUsers } from '../utils/session.js'
@@ -85,6 +86,44 @@ function AdminUserReport() {
 
     localStorage.removeItem(`pikaplace:cart:${normalized}`)
     localStorage.removeItem(`pikaplace:orders:${normalized}`)
+=======
+import { useEffect, useState } from 'react'
+import Navbar from '../components/Navbar.jsx'
+import { apiFetch } from '../api/apiClient.js'
+import './AdminDashboard.css'
+
+function AdminUserReport() {
+  const [users, setUsers] = useState([])
+  const [metrics, setMetrics] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    monthlyLoggedInUsers: 0,
+    yearlyLoggedInUsers: 0,
+  })
+
+  const refresh = async () => {
+    const data = await apiFetch('/api/admin/users')
+    setMetrics(data?.metrics || metrics)
+    setUsers(data?.users || [])
+  }
+
+  useEffect(() => {
+    refresh().catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleDeleteUser = async (userId) => {
+    if (!userId) return
+    const ok = window.confirm('Delete this user?')
+    if (!ok) return
+    try {
+      await apiFetch(`/api/admin/users/${userId}`, { method: 'DELETE' })
+      await refresh()
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e?.message || 'Failed to delete user.')
+    }
+>>>>>>> Stashed changes
   }
 
   return (
@@ -131,7 +170,11 @@ function AdminUserReport() {
                   <thead>
                     <tr>
                       <th>Name</th>
+<<<<<<< Updated upstream
                       <th>Email</th>
+=======
+                      <th>Phone</th>
+>>>>>>> Stashed changes
                       <th>Mobile</th>
                       <th>Role</th>
                       <th>Total Orders</th>
@@ -140,16 +183,28 @@ function AdminUserReport() {
                     </tr>
                   </thead>
                   <tbody>
+<<<<<<< Updated upstream
                     {userRows.length === 0 ? (
+=======
+                    {users.length === 0 ? (
+>>>>>>> Stashed changes
                       <tr>
                         <td colSpan={7}>No users found.</td>
                       </tr>
                     ) : (
+<<<<<<< Updated upstream
                       userRows.map((row) => (
                         <tr key={row.id}>
                           <td>{row.name}</td>
                           <td>{row.email}</td>
                           <td>{row.mobile}</td>
+=======
+                      users.map((row) => (
+                        <tr key={row.id}>
+                          <td>{row.name || 'User'}</td>
+                          <td>{row.phoneNumber}</td>
+                          <td>{row.mobile || '-'}</td>
+>>>>>>> Stashed changes
                           <td>{row.role}</td>
                           <td>{row.totalOrders}</td>
                           <td>{row.lastLogin ? new Date(row.lastLogin).toLocaleString('en-IN') : '-'}</td>
@@ -157,7 +212,11 @@ function AdminUserReport() {
                             <button
                               type="button"
                               className="admin-link-button admin-link-button--danger"
+<<<<<<< Updated upstream
                               onClick={() => handleDeleteUser(row.email)}
+=======
+                              onClick={() => handleDeleteUser(row.id)}
+>>>>>>> Stashed changes
                             >
                               Delete
                             </button>
